@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>שעות העבודה שלי</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#f4f3f0; --surface:#fff; --surface2:#f0efe9; --border:#e2e0d8;
+      --text:#1a1916; --text2:#7a7870; --accent:#1a1a2e; --accent2:#534AB7;
+      --green:#1D9E75; --green-bg:#E1F5EE; --green-text:#085041;
+      --red:#993C1D; --red-bg:#FAECE7; --red-text:#712B13;
+      --orange:#BA7517; --orange-bg:#FAEEDA;
+      --blue:#378ADD; --blue-bg:#E6F1FB; --blue-text:#0C447C;
+      --purple-bg:#EEEDFE; --purple-text:#3C3489;
+      --r:12px; --r-sm:8px;
+      --shadow:0 2px 12px rgba(0,0,0,0.07);
+      --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    .app-shell{max-width:480px;margin:0 auto;min-height:100vh;background:var(--surface);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+    .topbar{background:var(--accent);color:#fff;padding:20px 20px 16px}
+    .topbar h1{font-size:20px;font-weight:600;letter-spacing:-.3px}
+    .topbar p{font-size:13px;opacity:.6;margin-top:3px}
+    .summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;background:var(--accent)}
+    .stat-card{background:rgba(255,255,255,.08);border-radius:var(--r-sm);padding:12px 14px;border:.5px solid rgba(255,255,255,.12)}
+    .stat-card.owed{background:rgba(250,236,231,.12);border-color:rgba(255,120,80,.25)}
+    .stat-card .sk{font-size:11px;color:rgba(255,255,255,.55);margin-bottom:4px}
+    .stat-card.owed .sk{color:#ffb8a0}
+    .stat-card .sv{font-size:22px;font-weight:600;color:#fff;letter-spacing:-.5px}
+    .stat-card.owed .sv{color:#ffcdb8}
+    .tab-row{display:flex;background:var(--surface);border-bottom:1.5px solid var(--border);position:sticky;top:0;z-index:10}
+    .tab{flex:1;padding:13px 0;text-align:center;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:color .2s,border-color .2s;user-select:none}
+    .tab.act{color:var(--accent2);border-bottom-color:var(--accent2)}
+    .tab:hover:not(.act){color:var(--text)}
+    .sec{font-size:11px;font-weight:600;color:var(--text2);padding:14px 16px 6px;text-transform:uppercase;letter-spacing:.8px}
+    /* shifts */
+    .shift-item{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;transition:background .15s;cursor:pointer}
+    .shift-item:hover{background:var(--surface2)}
+    .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+    .shift-body{flex:1;min-width:0}
+    .shift-date{font-size:14px;font-weight:500;color:var(--text)}
+    .shift-meta{font-size:12px;color:var(--text2);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .emp-badge{display:inline-flex;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:500}
+    .shift-right{text-align:left;flex-shrink:0}
+    .shift-amt{font-size:14px;font-weight:600}
+    .shift-status{font-size:11px;margin-top:3px}
+    /* payment log under shift */
+    .pay-log{background:var(--surface2);border-radius:var(--r-sm);margin:4px 0 2px 22px;padding:8px 10px;font-size:12px;color:var(--text2);border:1px solid var(--border)}
+    .pay-log-row{display:flex;justify-content:space-between;padding:2px 0}
+    .pay-log-row .pdate{color:var(--text2)}
+    .pay-log-row .pamt{font-weight:600;color:var(--green-text)}
+    /* employers */
+    .emp-item{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:background .15s}
+    .emp-item:hover{background:var(--surface2)}
+    .emp-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+    .emp-name{font-size:14px;font-weight:500;color:var(--text)}
+    .emp-detail{font-size:12px;color:var(--text2);margin-top:2px}
+    .chip{border-radius:8px;padding:4px 10px;text-align:center;flex-shrink:0}
+    .chip .cl{font-size:10px;margin-bottom:1px}
+    .chip .cv{font-size:13px;font-weight:600}
+    .chip.owed{background:var(--red-bg)}
+    .chip.owed .cl{color:var(--red)}
+    .chip.owed .cv{color:var(--red-text)}
+    .chip.paid{background:var(--green-bg)}
+    .chip.paid .cl{color:var(--green)}
+    .chip.paid .cv{color:var(--green-text)}
+    /* form */
+    .form-section{padding:16px}
+    .form-section h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+    .frow{margin-bottom:12px}
+    .frow label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;font-weight:500}
+    .frow input,.frow select,.frow textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;font-family:'Heebo',sans-serif;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s}
+    .frow input:focus,.frow select:focus,.frow textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(83,74,183,.1)}
+    .frow2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .frow2 .frow{margin-bottom:0}
+    .calc-box{background:var(--surface2);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;border:1px solid var(--border)}
+    .calc-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--text2)}
+    .calc-row span:last-child{color:var(--text);font-weight:500}
+    .calc-row.total{border-top:1px solid var(--border);margin-top:6px;padding-top:8px;font-weight:600}
+    .calc-row.total span{color:var(--red-text) !important}
+    .btn-primary{width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:12px;font-size:14px;font-weight:600;font-family:'Heebo',sans-serif;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.2px}
+    .btn-primary:hover{opacity:.88}
+    .btn-primary:active{transform:scale(.98)}
+    .btn-secondary{width:100%;background:var(--surface2);color:var(--accent);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:14px;font-weight:600;font-family:'Heebo',sans-serif;cursor:pointer;transition:opacity .15s}
+    .btn-secondary:hover{background:var(--border)}
+    .divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+    .empty{text-align:center;padding:36px 20px;color:var(--text2);font-size:14px;line-height:1.6}
+    .empty-icon{font-size:36px;margin-bottom:10px;display:block}
+    .alert{background:var(--orange-bg);border-radius:var(--r-sm);padding:10px 14px;font-size:13px;color:#633806;margin-bottom:14px;border:1px solid #f0d08a}
+    .pane{flex:1;overflow-y:auto}
+    /* payment badge on employer row */
+    .pay-now-btn{font-size:12px;background:var(--accent2);color:#fff;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:'Heebo',sans-serif;font-weight:600;white-space:nowrap;margin-right:6px}
+    .pay-now-btn:hover{opacity:.85}
+    .del-emp-btn{font-size:12px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;font-family:'Heebo',sans-serif;line-height:1;transition:background .15s,color .15s}
+    .del-emp-btn:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red)}
+    /* confirm modal */
+    .confirm-modal{background:var(--surface);border-radius:var(--r) var(--r) 0 0;padding:24px 20px 32px;width:100%;max-width:480px;animation:slideUp .25s ease}
+    .confirm-title{font-size:16px;font-weight:600;margin-bottom:6px}
+    .confirm-sub{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5}
+    .confirm-warn{background:var(--red-bg);border-radius:var(--r-sm);padding:10px 14px;font-size:13px;color:var(--red-text);margin-bottom:16px;border:1px solid #f5c4b4}
+    .btn-danger{width:100%;background:#c0392b;color:#fff;border:none;border-radius:var(--r-sm);padding:12px;font-size:14px;font-weight:600;font-family:'Heebo',sans-serif;cursor:pointer;margin-bottom:8px}
+    .btn-danger:hover{opacity:.88}
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+    .modal-backdrop.hidden{display:none}
+    .modal{background:var(--surface);border-radius:var(--r) var(--r) 0 0;padding:20px 20px 32px;width:100%;max-width:480px;animation:slideUp .25s ease}
+    @keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal h3{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+    .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);padding:0 4px}
+    /* timesheet modal */
+    .ts-modal{background:var(--surface);border-radius:var(--r) var(--r) 0 0;padding:20px 20px 32px;width:100%;max-width:480px;animation:slideUp .25s ease;max-height:88vh;overflow-y:auto}
+    .ts-modal h3{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+    .ts-preview{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;font-size:12px;line-height:1.8;white-space:pre-wrap;direction:rtl;text-align:right;max-height:240px;overflow-y:auto;font-family:monospace,sans-serif;color:var(--text)}
+    .sheet-btn{display:flex;align-items:center;gap:8px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:12px 16px;font-size:14px;font-weight:600;font-family:'Heebo',sans-serif;cursor:pointer;margin-bottom:8px;justify-content:center}
+    .sheet-btn:hover{opacity:.88}
+    .sheet-btn.sec{background:var(--surface2);color:var(--accent);border:1px solid var(--border)}
+    .sheet-btn.sec:hover{background:var(--border)}
+    .sheet-btn.grn{background:#1D9E75}
+    .fab{position:fixed;bottom:24px;right:20px;background:var(--accent2);color:#fff;border:none;border-radius:24px;padding:11px 18px;font-size:13px;font-weight:600;font-family:'Heebo',sans-serif;cursor:pointer;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:6px;z-index:50;transition:opacity .15s,transform .1s}
+    .fab:hover{opacity:.9}
+    .fab:active{transform:scale(.96)}
+    @media(min-width:480px){.fab{position:absolute}}
+        /* toast */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--accent);color:#fff;font-size:13px;font-family:'Heebo',sans-serif;padding:10px 20px;border-radius:24px;white-space:nowrap;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;box-shadow:var(--shadow-lg)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(min-width:480px){body{padding:20px 0;background:#e8e6e0}.app-shell{border-radius:var(--r);min-height:auto}.toast{position:absolute;bottom:16px}}
+  </style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- TIMESHEET MODAL -->
+<div class="modal-backdrop hidden" id="tsModal">
+  <div class="ts-modal">
+    <h3>
+      <span>📄 גיליון שעות</span>
+      <button class="modal-close" onclick="closeTsModal()">✕</button>
+    </h3>
+    <div class="frow">
+      <label>מעסיק</label>
+      <select id="tsEmp" onchange="renderTsPreview()">
+        <option value="0">כל המעסיקים</option>
+      </select>
+    </div>
+    <div class="frow2">
+      <div class="frow"><label>מתאריך</label>
+        <input type="date" id="tsFrom" oninput="renderTsPreview()"></div>
+      <div class="frow"><label>עד תאריך</label>
+        <input type="date" id="tsTo" oninput="renderTsPreview()"></div>
+    </div>
+    <div class="ts-preview" id="tsPreview">בחר טווח תאריכים...</div>
+    <button class="sheet-btn grn" onclick="copyTimesheet()">📋 העתק גיליון</button>
+    <button class="sheet-btn" onclick="emailTimesheet()">✉️ שלח במייל</button>
+    <button class="sheet-btn sec" onclick="closeTsModal()">סגור</button>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal-backdrop hidden" id="delModal">
+  <div class="confirm-modal">
+    <div class="confirm-title">מחיקת מעסיק</div>
+    <div class="confirm-sub" id="delModalSub"></div>
+    <div class="confirm-warn" id="delModalWarn"></div>
+    <button class="btn-danger" onclick="confirmDeleteEmployer()">כן, מחק את כל הנתונים</button>
+    <button class="btn-secondary" onclick="closeDelModal()">ביטול</button>
+  </div>
+</div>
+
+
+<div class="modal-backdrop hidden" id="payModal">
+  <div class="modal">
+    <h3>
+      <span id="payModalTitle">רישום תשלום</span>
+      <button class="modal-close" onclick="closePayModal()">✕</button>
+    </h3>
+    <div class="calc-box" id="payModalSummary"></div>
+    <div class="frow">
+      <label>סכום שהתקבל (₪)</label>
+      <input type="number" id="payAmount" min="0.01" step="0.01" placeholder="0.00" oninput="updatePayCalc()">
+    </div>
+    <div class="frow">
+      <label>תאריך קבלת התשלום</label>
+      <input type="date" id="payDate">
+    </div>
+    <div class="frow">
+      <label>הערה (אופציונלי)</label>
+      <input type="text" id="payNote" placeholder="לדוגמה: מקדמה, שבוע ראשון...">
+    </div>
+    <div class="calc-box" id="payAfterCalc" style="display:none"></div>
+    <button class="btn-primary" onclick="savePayment()" style="margin-top:4px">שמור תשלום</button>
+  </div>
+</div>
+
+<div class="app-shell">
+  <div class="topbar">
+    <h1>שעות העבודה שלי</h1>
+    <p id="topSub">כל המעסיקים</p>
+  </div>
+  <div class="summary" id="summaryBar"></div>
+  <div class="tab-row">
+    <div class="tab act" id="tabBtn0" onclick="switchTab(0)">משמרות</div>
+    <div class="tab" id="tabBtn1" onclick="switchTab(1)">מעסיקים</div>
+    <div class="tab" id="tabBtn2" onclick="switchTab(2)">+ הוסף</div>
+  </div>
+  <div class="pane" id="pane0"></div>
+  <div class="pane" id="pane1" style="display:none"></div>
+  <div class="pane" id="pane2" style="display:none"></div>
+
+<button class="fab" onclick="openTsModal()">📄 גיליון שעות</button>
+</div>
+
+<script>
+const COLORS=[
+  {bg:'#EEEDFE',text:'#3C3489',dot:'#534AB7'},
+  {bg:'#E1F5EE',text:'#085041',dot:'#1D9E75'},
+  {bg:'#E6F1FB',text:'#0C447C',dot:'#378ADD'},
+  {bg:'#FAEEDA',text:'#633806',dot:'#BA7517'},
+  {bg:'#FAECE7',text:'#712B13',dot:'#993C1D'},
+];
+
+let employers=[
+  {id:1,name:'סופרמרקט כהן',rate:38,colorIdx:0},
+  {id:2,name:'פיצה האחים',rate:35,colorIdx:1},
+];
+
+// shifts: each shift has its own rate at time of entry (not linked to employer default)
+let shifts=[
+  {id:1,empId:1,date:'2025-05-12',start:'08:00',end:'16:30',rate:38},
+  {id:2,empId:2,date:'2025-05-13',start:'17:00',end:'23:00',rate:35},
+  {id:3,empId:2,date:'2025-05-14',start:'17:00',end:'23:00',rate:35},
+  {id:4,empId:2,date:'2025-05-15',start:'17:00',end:'22:00',rate:35},
+];
+
+// payments: independent of shifts — linked to employer, with date & amount
+let payments=[
+  {id:1,empId:1,date:'2025-05-20',amount:200,note:'מקדמה'},
+];
+
+let nextEmpId=3,nextShiftId=5,nextPayId=2,currentTab=0;
+let payModalEmpId=null;
+
+/* ---- UTILS ---- */
+function hrs(s,e){
+  const[sh,sm]=s.split(':').map(Number);
+  let[eh,em]=e.split(':').map(Number);
+  if(e==='24:00'){eh=24;em=0;}
+  return((eh*60+em)-(sh*60+sm))/60;
+}
+function fmt(n){return'₪'+n.toFixed(2).replace(/\.00$/,'')}
+function initials(n){const p=n.trim().split(' ');return p.length>=2?p[0][0]+p[1][0]:n.slice(0,2)}
+function getEmp(id){return employers.find(e=>e.id===id)}
+function getColor(i){return COLORS[i%COLORS.length]}
+
+function earnedByEmp(eid){
+  return shifts.filter(s=>!eid||s.empId===eid)
+    .reduce((a,s)=>a+hrs(s.start,s.end)*s.rate,0);
+}
+function paidByEmp(eid){
+  return payments.filter(p=>!eid||p.empId===eid).reduce((a,p)=>a+p.amount,0);
+}
+function owedByEmp(eid){return Math.max(0,earnedByEmp(eid)-paidByEmp(eid))}
+
+function hebrewDate(d){
+  const days=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const months=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const dt=new Date(d+'T12:00:00');
+  return`יום ${days[dt.getDay()]}, ${dt.getDate()} ב${months[dt.getMonth()]}`;
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ---- SUMMARY BAR ---- */
+function renderSummary(){
+  const earned=earnedByEmp(null),owed=owedByEmp(null);
+  document.getElementById('summaryBar').innerHTML=`
+    <div class="stat-card"><div class="sk">סה"כ הרווחתי</div><div class="sv">${fmt(earned)}</div></div>
+    <div class="stat-card owed"><div class="sk">נשאר לגבות</div><div class="sv">${fmt(owed)}</div></div>`;
+}
+
+/* ---- SHIFTS PANE ---- */
+function renderShifts(){
+  renderSummary();
+  if(!shifts.length){
+    document.getElementById('pane0').innerHTML=`<div class="empty"><span class="empty-icon">📋</span>אין משמרות עדיין.<br>לחץ על "+ הוסף".</div>`;
+    return;
+  }
+  let h=`<div class="sec">משמרות</div>`;
+  [...shifts].sort((a,b)=>b.date.localeCompare(a.date)).forEach(s=>{
+    const e=getEmp(s.empId);if(!e)return;
+    const c=getColor(e.colorIdx);
+    const hh=hrs(s.start,s.end),total=hh*s.rate;
+    h+=`
+      <div class="shift-item">
+        <div class="dot" style="background:${c.dot}"></div>
+        <div class="shift-body">
+          <div class="shift-date">${hebrewDate(s.date)}</div>
+          <div class="shift-meta">
+            ${s.start}–${s.end} &middot; ${hh%1===0?hh:hh.toFixed(1)} ש׳ &middot; ₪${s.rate}/ש׳
+            &middot; <span class="emp-badge" style="background:${c.bg};color:${c.text}">${e.name}</span>
+          </div>
+        </div>
+        <div class="shift-right">
+          <div class="shift-amt">${fmt(total)}</div>
+        </div>
+      </div>`;
+  });
+  document.getElementById('pane0').innerHTML=h;
+}
+
+/* ---- EMPLOYERS PANE ---- */
+function renderEmployers(){
+  if(!employers.length){
+    document.getElementById('pane1').innerHTML=`<div class="empty"><span class="empty-icon">🏢</span>אין מעסיקים עדיין.</div>`;
+    return;
+  }
+  let h=`<div class="sec">מעסיקים פעילים</div>`;
+  employers.forEach(e=>{
+    const c=getColor(e.colorIdx);
+    const ow=owedByEmp(e.id);
+    const earned=earnedByEmp(e.id);
+    const paid=paidByEmp(e.id);
+    const cnt=shifts.filter(s=>s.empId===e.id).length;
+    const empPays=payments.filter(p=>p.empId===e.id).sort((a,b)=>b.date.localeCompare(a.date));
+
+    let payLog='';
+    if(empPays.length){
+      payLog=`<div class="pay-log">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">היסטוריית תשלומים</div>
+        ${empPays.map(p=>`
+          <div class="pay-log-row">
+            <span class="pdate">${hebrewDate(p.date)}${p.note?' · '+p.note:''}</span>
+            <span class="pamt">+${fmt(p.amount)}</span>
+          </div>`).join('')}
+        <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;font-size:12px;">
+          <span style="color:var(--text2)">סה"כ שולם</span>
+          <span style="font-weight:600;color:var(--green-text)">${fmt(paid)}</span>
+        </div>
+      </div>`;
+    }
+
+    h+=`
+      <div class="emp-item" style="flex-wrap:wrap;cursor:default">
+        <div style="display:flex;align-items:center;gap:12px;width:100%">
+          <div class="emp-avatar" style="background:${c.bg};color:${c.text}">${initials(e.name)}</div>
+          <div style="flex:1;min-width:0">
+            <div class="emp-name">${e.name}</div>
+            <div class="emp-detail">₪${e.rate}/שעה &middot; ${cnt} משמרות &middot; ${fmt(earned)} הרווחתי</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            ${ow>0.01?`<button class="pay-now-btn" onclick="openPayModal(${e.id})">+ תשלום</button>`:''}
+            ${ow>0.01
+              ?`<div class="chip owed"><div class="cl">לגבות</div><div class="cv">${fmt(ow)}</div></div>`
+              :`<div class="chip paid"><div class="cl">שולם</div><div class="cv">במלואו</div></div>`}
+            <button class="del-emp-btn" onclick="openDelModal(${e.id})" title="מחק מעסיק">🗑</button>
+          </div>
+        </div>
+        ${payLog?`<div style="width:100%;padding-right:52px;margin-top:4px">${payLog}</div>`:''}
+      </div>`;
+  });
+  document.getElementById('pane1').innerHTML=h;
+}
+
+/* ---- ADD PANE ---- */
+function renderAdd(){
+  const today=new Date().toISOString().split('T')[0];
+  const empOpts=employers.map(e=>`<option value="${e.id}">${e.name} (₪${e.rate}/ש׳)</option>`).join('');
+  document.getElementById('pane2').innerHTML=`
+    <div class="form-section">
+      <h3>הוסף משמרת</h3>
+      ${!employers.length?`<div class="alert">קודם הוסף מעסיק (למטה)</div>`:''}
+      <div class="frow"><label>מעסיק</label>
+        <select id="fEmp" onchange="onEmpChange()">${empOpts}</select></div>
+      <div class="frow"><label>תאריך</label>
+        <input type="date" id="fDate" value="${today}"></div>
+      <div class="frow2">
+        <div class="frow"><label>שעת התחלה</label>
+          <input type="time" id="fStart" value="08:00" oninput="updateCalc()"></div>
+        <div class="frow"><label>שעת סיום</label>
+          <input type="time" id="fEnd" value="16:00" oninput="updateCalc()"></div>
+      </div>
+      <div class="frow"><label>שכר לשעה (₪)</label>
+        <input type="number" id="fRate" min="1" step="0.5" oninput="updateCalc()"></div>
+      <div class="calc-box" id="calcBox"></div>
+      <button class="btn-primary" onclick="addShift()">שמור משמרת</button>
+
+      <hr class="divider">
+      <h3>רישום תשלום שהתקבל</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+        קיבלת כסף ממעסיק? רשום כאן את הסכום ותאריך הקבלה — גם אם הוא חלקי או מכסה מספר משמרות.
+      </p>
+      ${!employers.length?`<div class="alert">קודם הוסף מעסיק</div>`:''}
+      <div class="frow"><label>מעסיק</label>
+        <select id="pEmp" onchange="updatePayFormCalc()">${empOpts}</select></div>
+      <div class="frow"><label>סכום שהתקבל (₪)</label>
+        <input type="number" id="pAmount" min="0.01" step="0.01" placeholder="0.00" oninput="updatePayFormCalc()"></div>
+      <div class="frow"><label>תאריך קבלת התשלום</label>
+        <input type="date" id="pDate" value="${today}"></div>
+      <div class="frow"><label>הערה (אופציונלי)</label>
+        <input type="text" id="pNote" placeholder="לדוגמה: מקדמה, שבוע ראשון..."></div>
+      <div class="calc-box" id="payFormCalc" style="display:none"></div>
+      <button class="btn-primary" onclick="addPaymentFromForm()">שמור תשלום</button>
+
+      <hr class="divider">
+      <h3>הוסף מעסיק חדש</h3>
+      <div class="frow"><label>שם המעסיק</label>
+        <input type="text" id="fEmpName" placeholder="לדוגמה: פיצה האחים"></div>
+      <div class="frow"><label>שכר שעתי ברירת מחדל (₪)</label>
+        <input type="number" id="fEmpRate" min="1" step="0.5" value="37"></div>
+      <button class="btn-primary" onclick="addEmployer()">שמור מעסיק</button>
+    </div>`;
+  onEmpChange();
+  updatePayFormCalc();
+}
+
+function onEmpChange(){
+  const sel=document.getElementById('fEmp');
+  const rateEl=document.getElementById('fRate');
+  if(!sel||!rateEl)return;
+  const e=getEmp(parseInt(sel.value));
+  if(e)rateEl.value=e.rate;
+  updateCalc();
+}
+
+function updateCalc(){
+  const start=document.getElementById('fStart')?.value||'08:00';
+  const end=document.getElementById('fEnd')?.value||'16:00';
+  const rate=parseFloat(document.getElementById('fRate')?.value||0);
+  const[sh,sm]=start.split(':').map(Number);
+  const[eh,em]=end.split(':').map(Number);
+  const h=((eh*60+em)-(sh*60+sm))/60;
+  const total=h>0?h*rate:0;
+  const box=document.getElementById('calcBox');
+  if(!box)return;
+  box.innerHTML=`
+    <div class="calc-row"><span>שעות</span><span>${h>0?(h%1===0?h:h.toFixed(1)):'—'} ש׳</span></div>
+    <div class="calc-row total"><span>סה"כ לתשלום</span><span>${h>0?fmt(total):'—'}</span></div>`;
+}
+
+function updatePayFormCalc(){
+  const sel=document.getElementById('pEmp');
+  const amtEl=document.getElementById('pAmount');
+  const box=document.getElementById('payFormCalc');
+  if(!sel||!box)return;
+  const eid=parseInt(sel.value);
+  const owed=owedByEmp(eid);
+  const amt=parseFloat(amtEl?.value||0);
+  box.style.display='';
+  const remaining=Math.max(0,owed-amt);
+  box.innerHTML=`
+    <div class="calc-row"><span>חוב נוכחי למעסיק</span><span style="color:var(--red-text)">${fmt(owed)}</span></div>
+    <div class="calc-row"><span>סכום שמתקבל</span><span style="color:var(--green)">${amt>0?fmt(amt):'—'}</span></div>
+    <div class="calc-row total"><span>ייוותר לגבות</span><span style="color:${remaining<0.01?'var(--green-text)':'var(--red-text)'}">
+      ${amt>0?fmt(remaining):'—'}</span></div>`;
+}
+
+/* ---- PAYMENT MODAL (from employers tab) ---- */
+function openPayModal(empId){
+  payModalEmpId=empId;
+  const e=getEmp(empId);
+  const owed=owedByEmp(empId);
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('payModalTitle').textContent=`תשלום מ${e.name}`;
+  document.getElementById('payAmount').value='';
+  document.getElementById('payDate').value=today;
+  document.getElementById('payNote').value='';
+  document.getElementById('payAfterCalc').style.display='none';
+  document.getElementById('payModalSummary').innerHTML=`
+    <div class="calc-row"><span>סה"כ שהרווחת</span><span>${fmt(earnedByEmp(empId))}</span></div>
+    <div class="calc-row"><span>שולם עד כה</span><span style="color:var(--green)">${fmt(paidByEmp(empId))}</span></div>
+    <div class="calc-row total"><span>נשאר לגבות</span><span style="color:var(--red-text)">${fmt(owed)}</span></div>`;
+  document.getElementById('payModal').classList.remove('hidden');
+  document.getElementById('payAmount').focus();
+}
+
+function updatePayCalc(){
+  const amt=parseFloat(document.getElementById('payAmount')?.value||0);
+  const owed=owedByEmp(payModalEmpId);
+  const remaining=Math.max(0,owed-amt);
+  const box=document.getElementById('payAfterCalc');
+  box.style.display='';
+  box.innerHTML=`
+    <div class="calc-row"><span>סכום שמתקבל</span><span style="color:var(--green)">${amt>0?fmt(amt):'—'}</span></div>
+    <div class="calc-row total"><span>ייוותר לגבות</span><span style="color:${remaining<0.01?'var(--green-text)':'var(--red-text)'}">
+      ${amt>0?fmt(remaining):'—'}</span></div>`;
+}
+
+function closePayModal(){
+  document.getElementById('payModal').classList.add('hidden');
+  payModalEmpId=null;
+}
+
+function savePayment(){
+  const amt=parseFloat(document.getElementById('payAmount')?.value||0);
+  const date=document.getElementById('payDate')?.value;
+  const note=document.getElementById('payNote')?.value.trim();
+  if(!amt||amt<=0){showToast('נא להזין סכום תקין');return;}
+  if(!date){showToast('נא לבחור תאריך');return;}
+  payments.push({id:nextPayId++,empId:payModalEmpId,date,amount:amt,note});
+  closePayModal();
+  showToast('✓ התשלום נרשם!');
+  renderEmployers();
+  renderSummary();
+}
+
+function addPaymentFromForm(){
+  const eid=parseInt(document.getElementById('pEmp')?.value);
+  const amt=parseFloat(document.getElementById('pAmount')?.value||0);
+  const date=document.getElementById('pDate')?.value;
+  const note=document.getElementById('pNote')?.value.trim();
+  if(!eid){showToast('נא לבחור מעסיק');return;}
+  if(!amt||amt<=0){showToast('נא להזין סכום תקין');return;}
+  if(!date){showToast('נא לבחור תאריך');return;}
+  payments.push({id:nextPayId++,empId:eid,date,amount:amt,note});
+  showToast('✓ התשלום נרשם!');
+  switchTab(1);
+}
+
+function addShift(){
+  const empId=parseInt(document.getElementById('fEmp')?.value);
+  const date=document.getElementById('fDate')?.value;
+  const start=document.getElementById('fStart')?.value;
+  const end=document.getElementById('fEnd')?.value;
+  const rate=parseFloat(document.getElementById('fRate')?.value);
+  if(!empId||!date||!start||!end||!rate){showToast('נא למלא את כל השדות');return;}
+  const[sh,sm]=start.split(':').map(Number);
+  const[eh,em]=end.split(':').map(Number);
+  if((eh*60+em)<=(sh*60+sm)){showToast('שעת סיום חייבת להיות אחרי ההתחלה');return;}
+  shifts.push({id:nextShiftId++,empId,date,start,end,rate});
+  showToast('✓ המשמרת נשמרה!');
+  switchTab(0);
+}
+
+function addEmployer(){
+  const name=document.getElementById('fEmpName')?.value.trim();
+  const rate=parseFloat(document.getElementById('fEmpRate')?.value);
+  if(!name){showToast('נא להזין שם מעסיק');return;}
+  if(!rate||rate<=0){showToast('נא להזין שכר תקין');return;}
+  employers.push({id:nextEmpId++,name,rate,colorIdx:employers.length%COLORS.length});
+  showToast('✓ המעסיק נשמר!');
+  switchTab(1);
+}
+
+/* ---- TIMESHEET ---- */
+function openTsModal(){
+  const sel = document.getElementById('tsEmp');
+  sel.innerHTML = '<option value="0">כל המעסיקים</option>' +
+    employers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  // default: span of all shifts (or current month if no shifts)
+  if(shifts.length){
+    const dates = shifts.map(s=>s.date).sort();
+    document.getElementById('tsFrom').value = dates[0];
+    document.getElementById('tsTo').value   = dates[dates.length-1];
+  } else {
+    const now = new Date();
+    const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+    const lastDay = new Date(y, now.getMonth()+1, 0).getDate();
+    document.getElementById('tsFrom').value = `${y}-${m}-01`;
+    document.getElementById('tsTo').value   = `${y}-${m}-${String(lastDay).padStart(2,'0')}`;
+  }
+  renderTsPreview();
+  document.getElementById('tsModal').classList.remove('hidden');
+}
+
+function closeTsModal(){
+  document.getElementById('tsModal').classList.add('hidden');
+}
+
+function getTsData(){
+  const eid   = parseInt(document.getElementById('tsEmp').value)||0;
+  const from  = document.getElementById('tsFrom').value;
+  const to    = document.getElementById('tsTo').value;
+  if(!from||!to) return null;
+  return shifts
+    .filter(s => (!eid||s.empId===eid) && s.date>=from && s.date<=to)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function buildTsText(){
+  const eid      = parseInt(document.getElementById('tsEmp').value)||0;
+  const from     = document.getElementById('tsFrom').value;
+  const to       = document.getElementById('tsTo').value;
+  const filtered = getTsData();
+  if(!filtered||!filtered.length) return '';
+  const empName  = eid ? (getEmp(eid)?.name||'') : 'כל המעסיקים';
+  let totalHrs=0, totalAmt=0;
+  const sep = '━'.repeat(44);
+  let lines = [];
+  lines.push(`📋 גיליון שעות — ${empName}`);
+  lines.push(`📅 תקופה: ${from} — ${to}`);
+  lines.push(sep);
+  filtered.forEach(s=>{
+    const e=getEmp(s.empId); if(!e) return;
+    const hh=hrs(s.start,s.end);
+    const amt=hh*s.rate;
+    totalHrs+=hh; totalAmt+=amt;
+    const hhStr = hh%1===0 ? hh+' ש׳' : hh.toFixed(1)+' ש׳';
+    lines.push(`📅 ${s.date}`);
+    lines.push(`   ${s.start}–${s.end}  |  ${hhStr}  |  ₪${s.rate}/ש׳  |  ${fmt(amt)}`);
+    if(!eid) lines.push(`   [${e.name}]`);
+  });
+  lines.push(sep);
+  const hTot = totalHrs%1===0 ? totalHrs : totalHrs.toFixed(2);
+  lines.push(`⏱ סה"כ שעות: ${hTot}`);
+  lines.push(`💰 סה"כ לתשלום: ${fmt(totalAmt)}`);
+  // payments in range
+  const paidInRange = payments.filter(p=>(!eid||p.empId===eid)&&p.date>=from&&p.date<=to);
+  if(paidInRange.length){
+    lines.push('');
+    lines.push('💳 תשלומים שהתקבלו:');
+    paidInRange.forEach(p=>{
+      const pe=getEmp(p.empId);
+      lines.push(`   ${p.date}  ${fmt(p.amount)}${p.note?' ('+p.note+')':''}${!eid&&pe?' ['+pe.name+']':''}`);
+    });
+    const paidSum=paidInRange.reduce((a,p)=>a+p.amount,0);
+    lines.push(`✅ שולם: ${fmt(paidSum)}`);
+    const owed=Math.max(0,totalAmt-paidSum);
+    if(owed>0.01) lines.push(`⚠️ נשאר לגבות: ${fmt(owed)}`);
+    else lines.push('✅ שולם במלואו');
+  }
+  return lines.join('\n');
+}
+
+function renderTsPreview(){
+  const filtered = getTsData();
+  const box = document.getElementById('tsPreview');
+  if(!filtered){ box.textContent='בחר טווח תאריכים...'; return; }
+  if(!filtered.length){ box.textContent='אין משמרות בטווח זה.'; return; }
+  box.textContent = buildTsText();
+}
+
+function copyTimesheet(){
+  const text = buildTsText();
+  if(!text){ showToast('אין נתונים להעתקה'); return; }
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast('✓ הגיליון הועתק!');
+  }).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✓ הגיליון הועתק!');
+  });
+}
+
+function emailTimesheet(){
+  const text = buildTsText();
+  if(!text){ showToast('אין נתונים לשליחה'); return; }
+  const eid  = parseInt(document.getElementById('tsEmp').value)||0;
+  const from = document.getElementById('tsFrom').value;
+  const to   = document.getElementById('tsTo').value;
+  const empName = eid ? (getEmp(eid)?.name||'') : 'כל המעסיקים';
+  const subject = encodeURIComponent(`גיליון שעות — ${empName} (${from} עד ${to})`);
+  const body    = encodeURIComponent(text);
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+/* ---- DELETE EMPLOYER ---- */
+let delModalEmpId=null;
+
+function openDelModal(empId){
+  delModalEmpId=empId;
+  const e=getEmp(empId);
+  const shiftCnt=shifts.filter(s=>s.empId===empId).length;
+  const payCnt=payments.filter(p=>p.empId===empId).length;
+  const earned=earnedByEmp(empId);
+  const owed=owedByEmp(empId);
+  document.getElementById('delModalSub').innerHTML=
+    `אתה עומד למחוק את <strong>${e.name}</strong>.<br>פעולה זו תמחק גם את כל הנתונים הקשורים אליו:`;
+  document.getElementById('delModalWarn').innerHTML=
+    `⚠️ ${shiftCnt} משמרת${shiftCnt!==1?'ות':''} · ${payCnt} תשלום${payCnt!==1?'ים':''} · ${fmt(earned)} הרווחתי`+
+    (owed>0.01?` · <strong>נותר לגבות ${fmt(owed)}</strong>`:'');
+  document.getElementById('delModal').classList.remove('hidden');
+}
+
+function closeDelModal(){
+  document.getElementById('delModal').classList.add('hidden');
+  delModalEmpId=null;
+}
+
+function confirmDeleteEmployer(){
+  if(!delModalEmpId)return;
+  employers=employers.filter(e=>e.id!==delModalEmpId);
+  shifts=shifts.filter(s=>s.empId!==delModalEmpId);
+  payments=payments.filter(p=>p.empId!==delModalEmpId);
+  closeDelModal();
+  showToast('המעסיק נמחק');
+  renderSummary();
+  renderEmployers();
+}
+
+
+/* ---- TAB SWITCH ---- */
+function switchTab(i){
+  currentTab=i;
+  [0,1,2].forEach(j=>{
+    document.getElementById('tabBtn'+j).classList.toggle('act',j===i);
+    document.getElementById('pane'+j).style.display=j===i?'':'none';
+  });
+  if(i===0)renderShifts();
+  if(i===1)renderEmployers();
+  if(i===2)renderAdd();
+}
+
+document.getElementById('tsModal').addEventListener('click',function(e){
+  if(e.target===this)closeTsModal();
+});
+document.getElementById('delModal').addEventListener('click',function(e){
+  if(e.target===this)closeDelModal();
+});
+document.getElementById('payModal').addEventListener('click',function(e){
+  if(e.target===this)closePayModal();
+});
+
+switchTab(0);
+</script>
+</body>
+</html>
